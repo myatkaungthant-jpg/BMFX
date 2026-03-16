@@ -123,11 +123,12 @@ export function Lesson() {
         .from('user_progress')
         .upsert({
           user_id: profile.id,
-          lesson_id: lessonContent.id,
+          course_id: courseId,
+          lesson_id: lessonId,
           is_completed: newStatus,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id, lesson_id'
+          onConflict: 'user_id, course_id, lesson_id'
         });
 
       if (error) throw error;
