@@ -13,7 +13,8 @@ export function Dashboard() {
     totalLessons: 0,
     progress: 0
   });
-  const [nextLesson, setNextLesson] = useState<{ courseId: string, lessonId: string, title: string } | null>(null);
+  const [nextLesson, setNextLesson] = useState<{ courseId: string, lessonId: string, title: string, isNew?: boolean } | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,22 +27,23 @@ export function Dashboard() {
     try {
       setLoading(true);
       
-      // Fetch total lessons from Supabase
+      // 1. Fetch total lessons count
       const { count: total, error: totalError } = await supabase
         .from('lessons')
         .select('*', { count: 'exact', head: true });
       
       if (totalError) throw totalError;
       
+      // 2. Fetch user's completed progress
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
-        .select('course_id, lesson_id')
-        .eq('user_id', profile!.id)
-        .eq('is_completed', true);
+        .select('course_id, lesson_id, is_completed, updated_at')
+        .eq('user_id', profile!.id);
 
       if (progressError) throw progressError;
 
-      const completedCount = progressData.length;
+      const completedLessons = progressData.filter(p => p.is_completed);
+      const completedCount = completedLessons.length;
       const totalCount = total || 0;
       const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -51,7 +53,8 @@ export function Dashboard() {
         progress: progressPercent
       });
 
-      // Find next lesson to resume from Supabase
+      // 3. Find "Resume Learning" lesson
+      // Fetch all lessons to have context
       const { data: allLessons, error: allLessonsError } = await supabase
         .from('lessons')
         .select('id, course_id, lesson_id, title, order_index')
@@ -59,19 +62,83 @@ export function Dashboard() {
       
       if (allLessonsError) throw allLessonsError;
 
-      const next = allLessons.find(l => !progressData.some(p => p.course_id === l.course_id && p.lesson_id === l.lesson_id));
-      if (next) {
+      // Logic:
+      // a. Find the lesson with the most recent updated_at in user_progress
+      const mostRecentProgress = progressData.sort((a, b) => 
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      )[0];
+
+      let targetLesson = null;
+
+      if (mostRecentProgress) {
+        if (mostRecentProgress.is_completed) {
+          // If the most recent one is finished, find the next one in sequence (all modules)
+          const currentIndex = allLessons.findIndex(l => l.course_id === mostRecentProgress.course_id && l.lesson_id === mostRecentProgress.lesson_id);
+          targetLesson = allLessons[currentIndex + 1] || null;
+        } else {
+          // If it's not finished, resume it
+          targetLesson = allLessons.find(l => l.course_id === mostRecentProgress.course_id && l.lesson_id === mostRecentProgress.lesson_id);
+        }
+      }
+
+      // If no progress at all, show the first lesson ever
+      if (!targetLesson && allLessons.length > 0) {
+        targetLesson = { ...allLessons[0], isNew: true };
+      }
+
+      if (targetLesson) {
         setNextLesson({
-          courseId: next.course_id,
-          lessonId: next.lesson_id,
-          title: next.title
+          courseId: targetLesson.course_id,
+          lessonId: targetLesson.lesson_id,
+          title: targetLesson.title,
+          isNew: (targetLesson as any).isNew
         });
       }
+
+      // 4. Fetch Announcements (Admin posts + New Modules + New Lessons)
+      await fetchAnnouncements();
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      // Fetch recent admin posts
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('id, content, created_at')
+        .eq('is_admin_post', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Fetch recent modules
+      const { data: courses } = await supabase
+        .from('courses')
+        .select('id, title, created_at')
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      // Fetch recent lessons
+      const { data: lessons } = await supabase
+        .from('lessons')
+        .select('id, title, created_at, course_id')
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      // Merge and sort
+      const combined = [
+        ...(posts?.map(p => ({ ...p, type: 'admin', title: 'Admin Update' })) || []),
+        ...(courses?.map(c => ({ ...c, type: 'course', title: 'New Module', content: `Module "${c.title}" is now available. Get started now!` })) || []),
+        ...(lessons?.map(l => ({ ...l, type: 'lesson', title: 'New Lesson', content: `New: "${l.title}" added to ${l.course_id.replace('-', ' ')} module.` })) || [])
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setAnnouncements(combined.slice(0, 4));
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
     }
   };
 
@@ -131,7 +198,12 @@ export function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-zinc-500 font-medium">Current Rank</p>
-                <p className="text-2xl font-bold">Student</p>
+                <p className="text-2xl font-bold">
+                  {profile?.role === 'admin' ? 'Admin' : 
+                   stats.completedLessons === 0 ? 'Student' :
+                   stats.completedLessons < 3 ? 'Novice' :
+                   stats.completedLessons < 8 ? 'Pro' : 'Elite'}
+                </p>
               </div>
             </div>
           </div>
@@ -143,7 +215,7 @@ export function Dashboard() {
               <div className="bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl p-8 relative overflow-hidden shadow-xl group">
                 <div className="relative z-10">
                   <span className="inline-block px-3 py-1 bg-white/20 dark:bg-black/10 text-xs font-bold rounded-full mb-4 backdrop-blur-sm">
-                    RESUME LEARNING
+                    {nextLesson.isNew ? 'GET STARTED' : 'RESUME LEARNING'}
                   </span>
                   <h2 className="text-3xl font-bold mb-2">{nextLesson.title}</h2>
                   <p className="text-zinc-400 dark:text-zinc-500 mb-6 max-w-md capitalize">
@@ -154,7 +226,7 @@ export function Dashboard() {
                     className="inline-flex items-center gap-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105"
                   >
                     <PlayCircle size={20} />
-                    Continue Lesson
+                    {nextLesson.isNew ? 'Start Lesson' : 'Continue Lesson'}
                   </Link>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#7AB8E5]/20 dark:bg-emerald-500/20 blur-3xl -mr-20 -mt-20 rounded-full group-hover:bg-[#7AB8E5]/30 dark:group-hover:bg-emerald-500/30 transition-colors" />
@@ -175,16 +247,19 @@ export function Dashboard() {
                 Recent Announcements
               </h2>
               <div className="space-y-6">
-                <div className="border-l-2 border-[#9CD5FF] dark:border-emerald-500 pl-4 py-1">
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">March 15, 2026</p>
-                  <h3 className="font-bold mb-1">New Alpha Module Lessons Added</h3>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">We've just released three new lessons covering advanced liquidity concepts. Check them out in the curriculum!</p>
-                </div>
-                <div className="border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 py-1">
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">March 10, 2026</p>
-                  <h3 className="font-bold mb-1">Community Call Recording</h3>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">The recording of our last weekly market breakdown is now available in the resources section.</p>
-                </div>
+                {announcements.length > 0 ? announcements.map((ann, idx) => (
+                  <div key={idx} className={`border-l-2 ${idx === 0 ? 'border-[#9CD5FF] dark:border-emerald-500' : 'border-zinc-200 dark:border-zinc-800'} pl-4 py-1`}>
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">
+                      {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <h3 className="font-bold mb-1">{ann.title}</h3>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">{ann.content}</p>
+                  </div>
+                )) : (
+                  <div className="text-center py-4 text-zinc-500">
+                    <p className="text-sm">No recent updates. Check back soon!</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -200,7 +275,7 @@ export function Dashboard() {
                   <span className="text-sm font-medium">Curriculum</span>
                   <ChevronRight size={16} className="text-zinc-400" />
                 </Link>
-                <Link to="/feed" className="flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-[#9CD5FF] dark:hover:border-emerald-500 transition-colors">
+                <Link to="/community" className="flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-[#9CD5FF] dark:hover:border-emerald-500 transition-colors">
                   <span className="text-sm font-medium">Community Feed</span>
                   <ChevronRight size={16} className="text-zinc-400" />
                 </Link>
