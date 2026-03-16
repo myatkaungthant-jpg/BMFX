@@ -49,7 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       `}>
         <div className="p-4 flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800 h-16 shrink-0">
           <div className="flex items-center gap-2">
-            <img src={theme === 'dark' ? "/logo-black.png" : "/logo.png"} alt="BMFX Logo" className="h-10 w-auto object-contain" />
+            <img src="/BMFX.png" alt="BMFX Logo" className="h-10 w-auto object-contain" />
             <h1 className="text-xl font-bold text-[#9CD5FF] dark:text-emerald-500 whitespace-nowrap">BMFX</h1>
           </div>
           <button className="md:hidden text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:text-zinc-100" onClick={() => setIsSidebarOpen(false)}>
