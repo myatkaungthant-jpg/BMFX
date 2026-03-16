@@ -9,13 +9,16 @@ import {
   Loader2, 
   UploadCloud, 
   Plus, 
-  X
+  X,
+  BookOpen,
+  FolderArchive
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format } from 'date-fns';
 import { Toast } from '../components/Toast';
 import { AnimatePresence } from 'motion/react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 interface Profile {
   id: string;
@@ -23,6 +26,7 @@ interface Profile {
   full_name: string;
   role: 'admin' | 'student';
   created_at: string;
+  progress_count?: number;
 }
 
 interface Course {
@@ -39,8 +43,17 @@ export function Admin() {
   const [uploading, setUploading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const location = useLocation();
   
+  const { profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!authLoading && profile && profile.role !== 'admin') {
+      navigate('/dashboard');
+    }
+  }, [profile, authLoading, navigate]);
+
   // New Lesson Form State
   const [newLesson, setNewLesson] = useState({
     course_id: '',
@@ -88,13 +101,34 @@ export function Admin() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profileError) throw profileError;
+
+      // Fetch all completed progress counts
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('user_id')
+        .eq('is_completed', true);
+
+      if (progressError) throw progressError;
+
+      // Calculate counts per user
+      const progressMap: Record<string, number> = {};
+      progressData?.forEach(p => {
+        progressMap[p.user_id] = (progressMap[p.user_id] || 0) + 1;
+      });
+
+      const enrichedUsers = profileData?.map(u => ({
+        ...u,
+        progress_count: progressMap[u.id] || 0
+      })) || [];
+
+      setUsers(enrichedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -147,25 +181,6 @@ export function Admin() {
     }
   };
 
-  const toggleRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'student' : 'admin';
-    setUpdatingId(userId);
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole as 'admin' | 'student' } : u));
-    } catch (error) {
-      console.error('Error updating role:', error);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
 
   const handleUploadLesson = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,7 +311,7 @@ export function Admin() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
@@ -320,16 +335,47 @@ export function Admin() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm md:col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl">
+                <BookOpen className="text-emerald-600 dark:text-emerald-400" size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-zinc-500 font-medium">Video Modules</p>
+                <p className="text-2xl font-bold">{courses.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Module Overview Section */}
+        <div className="mb-10">
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <FolderArchive className="text-[#9CD5FF] dark:text-emerald-500" size={24} />
+            Module Overview
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {courses.map(course => (
+              <div key={course.id} className="bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">Module</p>
+                <p className="font-bold text-sm truncate mb-2">{course.title}</p>
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 font-medium uppercase">
+                  <span>ID: {course.id}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-xl font-bold">User Management</h2>
+            <h2 className="text-xl font-bold">Student Progress</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Search users..." 
+                placeholder="Search students..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#9CD5FF] dark:focus:ring-emerald-500 w-full md:w-64"
@@ -344,7 +390,7 @@ export function Admin() {
                   <th className="px-6 py-4">User</th>
                   <th className="px-6 py-4">Role</th>
                   <th className="px-6 py-4">Joined</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -390,17 +436,9 @@ export function Admin() {
                         {format(new Date(user.created_at), 'MMM d, yyyy')}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => toggleRole(user.id, user.role)}
-                          disabled={updatingId === user.id}
-                          className="text-xs font-bold text-[#7AB8E5] dark:text-emerald-500 hover:text-[#9CD5FF] dark:hover:text-emerald-400 transition-colors disabled:opacity-50"
-                        >
-                          {updatingId === user.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            `Make ${user.role === 'admin' ? 'Student' : 'Admin'}`
-                          )}
-                        </button>
+                        <span className="text-xs font-bold text-[#7AB8E5] dark:text-emerald-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full uppercase tracking-tight">
+                          {user.progress_count || 0} Lessons
+                        </span>
                       </td>
                     </tr>
                   ))

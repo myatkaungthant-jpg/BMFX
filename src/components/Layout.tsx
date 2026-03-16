@@ -96,10 +96,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SettingsIcon size={20} className="shrink-0" />
             <span>Settings</span>
           </NavLink>
-          <NavLink to="/admin" className={navLinkClasses}>
-            <ShieldAlert size={20} className="shrink-0" />
-            <span>Admin</span>
-          </NavLink>
+          {profile?.role === 'admin' && (
+            <NavLink to="/admin" className={navLinkClasses}>
+              <ShieldAlert size={20} className="shrink-0" />
+              <span>Admin</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 shrink-0">
