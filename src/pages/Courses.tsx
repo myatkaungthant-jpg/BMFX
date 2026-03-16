@@ -271,8 +271,9 @@ export function Courses() {
                       const id = lesson.lesson_id;
                       const isCompleted = completedLessons.has(`${course.id}-${id}`);
                       const lessonIndex = parseInt(id);
-                      // Simple logic: first lesson is always unlocked, others unlocked if previous is completed
-                      const isUnlocked = lessonIndex === 1 || completedLessons.has(`${course.id}-${lessonIndex - 1}`);
+                      // Admin has everything unlocked. 
+                      // For students: first lesson is always unlocked, others unlocked if previous is completed
+                      const isUnlocked = isAdmin || lessonIndex === 1 || completedLessons.has(`${course.id}-${lessonIndex - 1}`);
 
                       return (
                         <Link 

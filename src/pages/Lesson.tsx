@@ -131,6 +131,14 @@ export function Lesson() {
         });
 
       if (error) throw error;
+
+      // Auto-advance logic: if completed and there is a next lesson, navigate to it
+      if (newStatus && hasNextLesson) {
+        // Short delay to let the user see the "Completed" state
+        setTimeout(() => {
+          navigate(`/courses/${courseId}/lessons/${nextLessonId}`);
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error updating progress:', error);
       setIsCompleted(!newStatus);

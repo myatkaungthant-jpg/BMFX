@@ -111,11 +111,39 @@ export function Admin() {
 
       if (error) throw error;
       setCourses(data || []);
+      
+      // Default course and suggest next lesson ID
       if (data && data.length > 0) {
-        setNewLesson(prev => ({ ...prev, course_id: data[0].id }));
+        const defaultCourseId = data[0].id;
+        setNewLesson(prev => ({ ...prev, course_id: defaultCourseId }));
+        suggestNextLessonId(defaultCourseId);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
+    }
+  };
+
+  const suggestNextLessonId = async (courseId: string) => {
+    if (!courseId) return;
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('lesson_id')
+        .eq('course_id', courseId)
+        .order('order_index', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const lastId = parseInt(data[0].lesson_id);
+        const nextId = (isNaN(lastId) ? 1 : lastId + 1).toString();
+        setNewLesson(prev => ({ ...prev, lesson_id: nextId }));
+      } else {
+        setNewLesson(prev => ({ ...prev, lesson_id: '1' }));
+      }
+    } catch (error) {
+      console.error('Error suggesting lesson ID:', error);
     }
   };
 
@@ -477,7 +505,11 @@ export function Admin() {
                   ) : (
                     <select 
                       value={newLesson.course_id}
-                      onChange={(e) => setNewLesson({...newLesson, course_id: e.target.value})}
+                      onChange={(e) => {
+                        const cid = e.target.value;
+                        setNewLesson({...newLesson, course_id: cid});
+                        suggestNextLessonId(cid);
+                      }}
                       className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#9CD5FF] dark:focus:ring-emerald-500"
                     >
                       {courses.map(course => (
