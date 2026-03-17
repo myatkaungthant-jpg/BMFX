@@ -18,44 +18,46 @@ export function TradingChart() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
-      <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-10 md:py-16 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 md:px-10 lg:px-12 py-8 md:py-16 space-y-10 md:space-y-12">
         {/* Premium Navigation & Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="space-y-4">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4 md:gap-5">
               <button 
                 onClick={() => navigate('/dashboard')}
-                className="p-3 bg-zinc-100 dark:bg-zinc-900 hover:bg-[#9CD5FF]/10 dark:hover:bg-emerald-500/10 text-zinc-600 dark:text-zinc-400 hover:text-[#9CD5FF] dark:hover:text-emerald-500 rounded-2xl border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group shadow-sm"
+                className="p-2.5 md:p-3 bg-zinc-100 dark:bg-zinc-900 hover:bg-[#9CD5FF]/10 dark:hover:bg-emerald-500/10 text-zinc-600 dark:text-zinc-400 hover:text-[#9CD5FF] dark:hover:text-emerald-500 rounded-2xl border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group shadow-sm shrink-0"
                 title="Back to Dashboard"
               >
-                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft size={18} className="md:size-[20px] group-hover:-translate-x-1 transition-transform" />
               </button>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+              <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white truncate">
                 Trading Chart
               </h1>
             </div>
-            <p className="text-zinc-500 dark:text-zinc-400 max-w-xl text-lg leading-relaxed font-medium">
-              Analyze global markets with BMFX's professional-grade analysis suite. Real-time data for elite traders.
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-xl text-base md:text-lg leading-relaxed font-medium">
+              BMFX's professional-grade analysis suite. Real-time data for elite traders.
             </p>
           </div>
 
-          {/* Quick Switcher - High-End Aesthetic */}
-          <div className="flex flex-col gap-3 min-w-fit lg:items-end">
-            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-400 dark:text-zinc-500 px-1">Market Quick Selection</span>
-            <div className="bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl p-1.5 rounded-[1.25rem] border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 shadow-2xl">
-              {QUICK_PAIRS.map((pair) => (
-                <button
-                  key={pair.symbol}
-                  onClick={() => setCurrentSymbol(pair.symbol)}
-                  className={`px-4 py-2.5 rounded-[0.875rem] text-xs font-bold transition-all duration-300 ${
-                    currentSymbol === pair.symbol
-                      ? 'bg-white dark:bg-zinc-800 text-[#7AB8E5] dark:text-emerald-400 shadow-lg ring-1 ring-zinc-200/50 dark:ring-zinc-700/50'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
-                  }`}
-                >
-                  {pair.name}
-                </button>
-              ))}
+          {/* Quick Switcher - Mobile Swappable (Horizontal Scroll) */}
+          <div className="flex flex-col gap-3 min-w-0 lg:items-end w-full lg:w-auto">
+            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-400 dark:text-zinc-500 px-1 lg:text-right">Market Quick Selection</span>
+            <div className="bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl p-1.5 rounded-[1.25rem] border border-zinc-200 dark:border-zinc-800 flex items-center gap-1.5 shadow-2xl overflow-x-auto no-scrollbar scroll-smooth">
+              <div className="flex items-center gap-1.5 flex-nowrap min-w-max px-0.5">
+                {QUICK_PAIRS.map((pair) => (
+                  <button
+                    key={pair.symbol}
+                    onClick={() => setCurrentSymbol(pair.symbol)}
+                    className={`px-4 py-2.5 rounded-[0.875rem] text-xs font-bold transition-all duration-300 whitespace-nowrap shrink-0 ${
+                      currentSymbol === pair.symbol
+                        ? 'bg-white dark:bg-zinc-800 text-[#7AB8E5] dark:text-emerald-400 shadow-lg ring-1 ring-zinc-200/50 dark:ring-zinc-700/50'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                    }`}
+                  >
+                    {pair.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
