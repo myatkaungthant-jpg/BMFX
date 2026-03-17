@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Home, BookOpen, Settings as SettingsIcon, LogOut, MessageSquare, FolderArchive, HelpCircle, ShieldAlert, Send, Calendar } from 'lucide-react';
+import { Menu, X, Home, BookOpen, Settings as SettingsIcon, LogOut, MessageSquare, FolderArchive, HelpCircle, ShieldAlert, Send, Calendar, TrendingUp } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
@@ -99,6 +99,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <NavLink to="/journal" className={navLinkClasses}>
             <BookOpen size={20} className="shrink-0" />
             <span>Trading Journal</span>
+          </NavLink>
+          <NavLink to="/chart" className={navLinkClasses}>
+            <TrendingUp size={20} className="shrink-0" />
+            <span>Trading Chart</span>
           </NavLink>
 
           <div className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-2 px-4 mt-6">Management</div>
