@@ -4,22 +4,22 @@ import { Calendar } from 'lucide-react';
 
 export function EconomicCalendar() {
   useEffect(() => {
-    // Create the script element
-    const script = document.createElement('script');
-    // Using a more robust script URL
-    script.src = "https://widgets.tradingeconomics.com/widget.js";
-    script.async = true;
-    
-    // Append to the document body
-    document.body.appendChild(script);
-
-    // Cleanup: remove the script on unmount
-    return () => {
-      const existingScript = document.querySelector('script[src="https://widgets.tradingeconomics.com/widget.js"]');
-      if (existingScript) {
-        document.body.removeChild(existingScript);
-      }
-    };
+    const container = document.getElementById('tradingview-widget-container');
+    if (container && !container.querySelector('script')) {
+      const script = document.createElement('script');
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        "colorTheme": "light",
+        "isTransparent": false,
+        "width": "100%",
+        "height": "800",
+        "locale": "en",
+        "importanceFilter": "-1,0,1",
+        "countryFilter": "ar,au,br,ca,cn,fr,de,in,id,it,jp,kr,mx,ru,sa,za,es,tr,gb,us,eu"
+      });
+      container.appendChild(script);
+    }
   }, []);
 
   return (
@@ -47,17 +47,10 @@ export function EconomicCalendar() {
           </div>
           
           <div className="p-0 h-[800px] bg-white">
-             {/* Trading Economics Widget Container */}
-             <div 
-                className="te-embed" 
-                data-widget="cl-pro" 
-                data-theme="light" 
-                data-width="100%" 
-                data-height="800"
-                data-importance="1,2,3"
-                data-language="en"
-                style={{ width: '100%', height: '800px' }}
-             ></div>
+             {/* TradingView Widget Container */}
+             <div id="tradingview-widget-container" className="tradingview-widget-container">
+                <div className="tradingview-widget-container__widget"></div>
+             </div>
           </div>
         </div>
       </div>
