@@ -17,8 +17,8 @@ export function TradingChart() {
   const [currentSymbol, setCurrentSymbol] = useState(QUICK_PAIRS[0].symbol);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 -m-4 md:-m-8">
-      <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-8 md:py-12 space-y-10">
+    <div className="min-h-screen bg-white dark:bg-zinc-950">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-12 py-10 md:py-16 space-y-12">
         {/* Premium Navigation & Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="space-y-4">
