@@ -14,8 +14,8 @@ import {
   startOfWeek
 } from 'date-fns';
 
-
 import { Layout } from '../components/Layout';
+import { Toast } from '../components/Toast';
 
 
 import { 
@@ -71,6 +71,7 @@ interface Trade {
   imageUrl?: string;
   pnlPercentage?: number;
   session?: string;
+  exitPrice?: number;
 }
 
 
@@ -80,6 +81,7 @@ export function TradingJournal() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchTrades = useCallback(async (userId: string) => {
     try {
@@ -108,7 +110,8 @@ export function TradingJournal() {
           timestamp: new Date(t.timestamp),
           imageUrl: t.image_url,
           pnlPercentage: t.pnl_percentage ? Number(t.pnl_percentage) : undefined,
-          session: t.session
+          session: t.session,
+          exitPrice: t.exit_price ? Number(t.exit_price) : undefined
         }));
         setTrades(formattedTrades);
       }
@@ -160,7 +163,9 @@ export function TradingJournal() {
     pnlPercentage: '',
     executionDate: format(new Date(), 'yyyy-MM-dd'),
     executionTime: format(new Date(), 'HH:mm'),
-    session: 'Tokyo'
+    session: 'Tokyo',
+    exitPrice: '',
+    isClosed: false
   });
 
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -277,6 +282,37 @@ export function TradingJournal() {
   const losses = filteredTrades.filter(t => t.status === 'Loss').length * 1.0;
   const profitFactor = losses === 0 ? (wins > 0 ? wins.toFixed(2) : '0.00') : (wins / losses).toFixed(2);
 
+  // Business Logic: RR & PnL Math Engine
+  const calculateRR = () => {
+    const entry = parseFloat(newTrade.entry);
+    const sl = parseFloat(newTrade.sl);
+    const tp = parseFloat(newTrade.tp);
+
+    if (!entry || !sl || !tp || entry === sl) return null;
+
+    if (newTrade.side === 'Long') {
+      return ((tp - entry) / (entry - sl)).toFixed(2);
+    } else {
+      return ((entry - tp) / (sl - entry)).toFixed(2);
+    }
+  };
+
+  const rrRatio = calculateRR();
+
+  // Handle Auto-PnL Calculation
+  useEffect(() => {
+    if (newTrade.isClosed && newTrade.entry && newTrade.exitPrice) {
+      const entry = parseFloat(newTrade.entry);
+      const exit = parseFloat(newTrade.exitPrice);
+      
+      if (entry > 0) {
+        let pnl = ((exit - entry) / entry) * 100;
+        if (newTrade.side === 'Short') pnl *= -1;
+        setNewTrade(prev => ({ ...prev, pnlPercentage: pnl.toFixed(2) }));
+      }
+    }
+  }, [newTrade.exitPrice, newTrade.isClosed, newTrade.entry, newTrade.side]);
+
   const handleAddTrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return alert('You must be logged in to add trades.');
@@ -350,6 +386,7 @@ export function TradingJournal() {
         }
       }
 
+      setToast({ message: `Trade Logged Successfully`, type: 'success' });
       setIsDrawerOpen(false);
       setEditingTrade(null);
       setNewTrade({
@@ -366,11 +403,13 @@ export function TradingJournal() {
         pnlPercentage: '',
         executionDate: format(new Date(), 'yyyy-MM-dd'),
         executionTime: format(new Date(), 'HH:mm'),
-        session: 'Tokyo'
+        session: 'Tokyo',
+        exitPrice: '',
+        isClosed: false
       });
     } catch (error: any) {
       console.error('Error saving trade:', error);
-      alert('Error saving trade: ' + error.message);
+      setToast({ message: error.message || 'Error saving trade', type: 'error' });
     }
   };
 
@@ -390,7 +429,9 @@ export function TradingJournal() {
       pnlPercentage: trade.pnlPercentage?.toString() || '',
       executionDate: format(trade.timestamp, 'yyyy-MM-dd'),
       executionTime: format(trade.timestamp, 'HH:mm'),
-      session: trade.session || 'Tokyo'
+      session: trade.session || 'Tokyo',
+      exitPrice: trade.exitPrice?.toString() || '',
+      isClosed: trade.status !== 'Open'
     });
     setIsDrawerOpen(true);
   };
@@ -1250,19 +1291,59 @@ export function TradingJournal() {
                   </div>
 
                   {/* PnL Percentage */}
-                  <div className="group flex items-center min-h-[44px] hover:bg-zinc-50 dark:hover:bg-zinc-900/50 rounded-lg px-2 transition-colors">
-                    <div className="w-32 flex items-center gap-2 text-zinc-500 text-sm">
-                      <TrendingUp size={16} />
-                      <span>PnL %</span>
+                  <div className="group flex flex-col gap-2 min-h-[44px] hover:bg-zinc-50 dark:hover:bg-zinc-900/50 rounded-lg px-2 py-2 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="w-32 flex items-center gap-2 text-zinc-500 text-sm">
+                        <TrendingUp size={16} />
+                        <span>Closed Trade?</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewTrade(prev => ({ ...prev, isClosed: !prev.isClosed }))}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          newTrade.isClosed ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'
+                        }`}
+                      >
+                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          newTrade.isClosed ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
                     </div>
-                    <input 
-                      type="number" 
-                      step="0.01"
-                      placeholder="e.g. 3.45"
-                      value={newTrade.pnlPercentage}
-                      onChange={(e) => setNewTrade({...newTrade, pnlPercentage: e.target.value})}
-                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-mono placeholder-zinc-300"
-                    />
+
+                    {newTrade.isClosed && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-2 mt-2"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-32 flex items-center gap-2 text-zinc-500 text-xs pl-6">
+                            <span>Exit Price</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            step="any"
+                            placeholder="0.00"
+                            value={newTrade.exitPrice}
+                            onChange={(e) => setNewTrade({...newTrade, exitPrice: e.target.value})}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-mono placeholder-zinc-300"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-32 flex items-center gap-2 text-zinc-500 text-xs pl-6">
+                            <span>Final PnL %</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="e.g. 3.45"
+                            value={newTrade.pnlPercentage}
+                            onChange={(e) => setNewTrade({...newTrade, pnlPercentage: e.target.value})}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-mono placeholder-zinc-300 text-emerald-500"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Image Upload */}
@@ -1353,6 +1434,11 @@ export function TradingJournal() {
                         onChange={(e) => setNewTrade({...newTrade, tp: e.target.value})}
                         className="w-24 bg-transparent border-none focus:ring-0 text-sm font-mono text-emerald-500 placeholder-emerald-300/50"
                       />
+                      {rrRatio && (
+                        <div className="ml-auto px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] font-black text-emerald-500 animate-in fade-in zoom-in duration-300">
+                          {rrRatio} RR
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1437,6 +1523,16 @@ export function TradingJournal() {
           </>
         )}
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast(null)} 
+          />
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }
