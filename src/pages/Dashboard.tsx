@@ -246,20 +246,22 @@ export function Dashboard() {
                 <Clock className="text-[#9CD5FF] dark:text-emerald-500" size={20} />
                 Recent Announcements
               </h2>
-              <div className="space-y-6">
-                {announcements.length > 0 ? announcements.map((ann, idx) => (
-                  <div key={idx} className={`border-l-2 ${idx === 0 ? 'border-[#9CD5FF] dark:border-emerald-500' : 'border-zinc-200 dark:border-zinc-800'} pl-4 py-1`}>
-                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                      {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </p>
-                    <h3 className="font-bold mb-1">{ann.title}</h3>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">{ann.content}</p>
-                  </div>
-                )) : (
-                  <div className="text-center py-4 text-zinc-500">
-                    <p className="text-sm">No recent updates. Check back soon!</p>
-                  </div>
-                )}
+              <div className="max-h-[380px] overflow-y-auto pr-2 no-scrollbar">
+                <div className="space-y-6">
+                  {announcements.length > 0 ? announcements.map((ann, idx) => (
+                    <div key={idx} className={`border-l-2 ${idx === 0 ? 'border-[#9CD5FF] dark:border-emerald-500' : 'border-zinc-200 dark:border-zinc-800'} pl-4 py-1`}>
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">
+                        {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                      <h3 className="font-bold mb-1">{ann.title}</h3>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">{ann.content}</p>
+                    </div>
+                  )) : (
+                    <div className="text-center py-4 text-zinc-500">
+                      <p className="text-sm">No recent updates. Check back soon!</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
