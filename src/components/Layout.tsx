@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Home, BookOpen, Settings as SettingsIcon, LogOut, MessageSquare, FolderArchive, HelpCircle, ShieldAlert, Send } from 'lucide-react';
+import { Menu, X, Home, BookOpen, Settings as SettingsIcon, LogOut, MessageSquare, FolderArchive, HelpCircle, ShieldAlert, Send, Calendar } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
@@ -90,6 +90,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Send size={20} className="shrink-0" />
             <span>Telegram Group</span>
           </a>
+
+          <div className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-2 px-4 mt-6">Premium Tools</div>
+          <NavLink to="/calendar" className={navLinkClasses}>
+            <Calendar size={20} className="shrink-0" />
+            <span>Economic Calendar</span>
+          </NavLink>
+          <NavLink to="/journal" className={navLinkClasses}>
+            <BookOpen size={20} className="shrink-0" />
+            <span>Trading Journal</span>
+          </NavLink>
 
           <div className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-2 px-4 mt-6">Management</div>
           <NavLink to="/settings" className={navLinkClasses}>

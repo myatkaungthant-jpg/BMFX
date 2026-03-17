@@ -13,10 +13,12 @@ import { Courses } from './pages/Courses';
 import { Lesson } from './pages/Lesson';
 import { Feed } from './pages/Feed';
 import { Resources } from './pages/Resources';
+import { EconomicCalendar } from './pages/EconomicCalendar';
 import { Help } from './pages/Help';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
 import { Admin } from './pages/Admin';
+import { TradingJournal } from './pages/TradingJournal';
 import { AdminRoute } from './components/AdminRoute';
 
 // Initialize React Query client
@@ -149,6 +151,8 @@ export default function App() {
             <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
             <Route path="/courses/:courseId/lessons/:lessonId" element={<ProtectedRoute><Lesson /></ProtectedRoute>} />
             <Route path="/community" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><EconomicCalendar /></ProtectedRoute>} />
+            <Route path="/journal" element={<ProtectedRoute><TradingJournal /></ProtectedRoute>} />
             <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
             <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
