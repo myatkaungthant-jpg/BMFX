@@ -35,11 +35,6 @@ export const useTradingMentor = () => {
         checklist: t.rules_checked
       }));
 
-      console.log(`DEBUG: Sending ${recentTrades.length} trades to AI Mentor.`);
-      if (recentTrades.length > 0) {
-        console.table(recentTrades);
-      }
-
       // 4. Call supabase.functions.invoke('bmfx-ai-mentor')
       const { data, error: functionError } = await supabase.functions.invoke('bmfx-ai-mentor', {
         body: { 

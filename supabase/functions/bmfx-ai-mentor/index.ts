@@ -41,7 +41,6 @@ RULES:
     }
 
     console.log(`Invoking bmfx-ai-mentor for user: ${studentQuestion.slice(0, 20)}...`);
-    console.log(`Context: Received ${recentTrades?.length || 0} recent trades.`);
 
     // Call Manus AI API
     const response = await fetch('https://api.manus.ai/v1/tasks', {
