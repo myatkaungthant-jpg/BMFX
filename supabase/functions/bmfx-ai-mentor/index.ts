@@ -59,7 +59,8 @@ serve(async (req) => {
 
     const taskData = await response.json()
     let taskId = taskData.id || taskData.task_id
-    let status = taskData.status
+    // Initial creation doesn't always have a status, but is inferred as running
+    let status = taskData.status || 'running' 
 
     console.log(`Task started: ${taskId}. Current status: ${status}`);
 
