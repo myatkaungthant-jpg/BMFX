@@ -119,7 +119,13 @@ RULES:
            finalReply = "The agent finished the task but provided no text output.";
         }
 
-        return new Response(JSON.stringify({ text: finalReply.trim() }), {
+        // Manus cost is usually 9-10 credits for reasoning tasks
+        const cost = pollData.credits || pollData.usage?.total_credits || 10;
+
+        return new Response(JSON.stringify({ 
+          text: finalReply.trim(),
+          cost: cost 
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
@@ -134,7 +140,8 @@ RULES:
     if (status === 'running' || status === 'pending') {
       return new Response(JSON.stringify({ 
         text: "The agent is still working, but the response is taking a bit longer. You can track it here:",
-        task_url: `https://manus.im/app/${taskId}` 
+        task_url: `https://manus.im/app/${taskId}`,
+        cost: 0 // No cost for timeout since it's still running
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

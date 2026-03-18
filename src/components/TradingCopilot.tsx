@@ -105,7 +105,7 @@ export const TradingCopilot = () => {
       return publicUrl;
     } catch (err) {
       console.error('Upload failed:', err);
-      return null;
+      return null; // This now includes { text, cost }
     } finally {
       setIsUploading(false);
     }
@@ -146,14 +146,18 @@ export const TradingCopilot = () => {
     try {
       const result = await askAI(currentInput, imageUrl || undefined);
 
-      // Decrement credit in DB
-      const { error: rpcError } = await supabase.rpc('decrement_user_credit', { user_uuid: userId });
+      // Decrement credit in DB based on actual AI cost (default to 10 if not provided)
+      const aiCost = result.cost || 10;
+      const { error: rpcError } = await supabase.rpc('decrement_user_credit', { 
+        user_uuid: userId,
+        amount: aiCost
+      });
       
       if (rpcError) {
         console.error('Failed to decrement credits:', rpcError);
       } else {
         // Refresh local credit state
-        setCredits(prev => ({ ...prev, daily: prev.daily - 1 }));
+        setCredits(prev => ({ ...prev, daily: prev.daily - aiCost }));
       }
 
       if (result) {

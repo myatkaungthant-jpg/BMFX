@@ -14,16 +14,16 @@ ON public.user_credits
 FOR SELECT 
 USING (auth.uid() = user_id);
 
--- Postgres function to decrement user credit
-CREATE OR REPLACE FUNCTION public.decrement_user_credit(user_uuid UUID)
+-- Postgres function to decrement user credit with optional amount
+CREATE OR REPLACE FUNCTION public.decrement_user_credit(user_uuid UUID, amount INTEGER DEFAULT 1)
 RETURNS void AS $$
 BEGIN
-    -- Update the credits if they are greater than 0
+    -- Update the credits if they are greater than or equal to the amount
     UPDATE public.user_credits
-    SET daily_credits = daily_credits - 1
-    WHERE user_id = user_uuid AND daily_credits > 0;
-
-    -- If no row was updated (either user doesn't exist or credits are 0), throw error
+    SET daily_credits = daily_credits - amount
+    WHERE user_id = user_uuid AND daily_credits >= amount;
+ 
+    -- If no row was updated (either user doesn't exist or insufficient credits), throw error
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Insufficient credits' USING ERRCODE = 'P0002';
     END IF;
