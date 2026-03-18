@@ -44,7 +44,18 @@ export const useTradingMentor = () => {
         }
       });
 
-      if (functionError) throw functionError;
+      if (functionError) {
+        // Try to extract detailed error from response body if possible
+        if (functionError instanceof Error && 'context' in functionError) {
+          try {
+            const body = await (functionError as any).context.json();
+            throw new Error(body.error || functionError.message);
+          } catch {
+            throw functionError;
+          }
+        }
+        throw functionError;
+      }
 
       return data;
 

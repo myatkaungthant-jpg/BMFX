@@ -43,24 +43,24 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Manus AI API Error:', errorData)
-      throw new Error(`Manus AI API returned ${response.status}: ${JSON.stringify(errorData)}`)
+      const errorText = await response.text();
+      console.error(`Manus AI API Error (${response.status}):`, errorText);
+      throw new Error(`Manus API Error: ${errorText || response.statusText}`);
     }
 
-    const data = await response.json()
-
-    // Return the response to the client
+    const data = await response.json();
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
 
   } catch (error) {
-    console.error('Edge Function Error:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: "Check your MANUS_API_KEY and Ensure the Edge Function is deployed."
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
-    })
+    });
   }
-})
+});
