@@ -251,9 +251,36 @@ export const TradingCopilot = () => {
                       ? 'bg-zinc-900 dark:bg-[#7AB8E5] text-white dark:text-zinc-950 font-medium rounded-tr-none'
                       : msg.role === 'system'
                         ? 'bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-widest italic border border-zinc-200 dark:border-zinc-800'
-                        : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-tl-none border-l-2 border-l-emerald-500'
+                        : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-tl-none border-l-2 border-l-emerald-500 shadow-sm'
                   }`}>
-                    {msg.content}
+                    {(() => {
+                      try {
+                        // Check if content is the Manus Task JSON
+                        if (msg.role === 'assistant' && msg.content.includes('task_url')) {
+                          const taskData = JSON.parse(msg.content);
+                          return (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-emerald-500 mb-1">
+                                <Sparkles size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Agent Task Started</span>
+                              </div>
+                              <p className="text-xs font-bold text-zinc-900 dark:text-white leading-tight">
+                                {taskData.task_title || 'Analyzing your request...'}
+                              </p>
+                              <a 
+                                href={taskData.task_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-center text-emerald-500 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-sm"
+                              >
+                                View Live Progress
+                              </a>
+                            </div>
+                          );
+                        }
+                      } catch (e) {}
+                      return msg.content;
+                    })()}
                     {msg.role === 'user' && !msg.content && <span className="italic opacity-50 text-[10px]">Image attached</span>}
                   </div>
                 </div>
