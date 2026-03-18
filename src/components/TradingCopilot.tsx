@@ -157,8 +157,11 @@ export const TradingCopilot = () => {
       }
 
       if (result) {
-        // ... extraction logic ...
-        const aiResponseContent = result.text || result.content || (typeof result === 'string' ? result : JSON.stringify(result));
+        // If there is a task_url, we want to keep the whole JSON for the card UI
+        // Otherwise, just extract the text
+        const aiResponseContent = result.task_url 
+          ? JSON.stringify(result) 
+          : (result.text || result.content || (typeof result === 'string' ? result : JSON.stringify(result)));
         
         const aiMessage: Message = {
           role: 'assistant',

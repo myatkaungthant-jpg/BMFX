@@ -57,13 +57,80 @@ serve(async (req) => {
       throw new Error(`Manus API Error (${response.status}): ${errorText || response.statusText}`);
     }
 
-    const data = await response.json();
-    console.log('Manus AI API Success');
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    const taskData = await response.json()
+    let taskId = taskData.id || taskData.task_id
+    let status = taskData.status
+
+    console.log(`Task started: ${taskId}. Current status: ${status}`);
+
+    // Step 2: The Polling Loop
+    // Wait for the task to complete, error out, or hit a maximum timeout (e.g. 50 seconds to fit Edge Function limits)
+    const startTime = Date.now();
+    const maxDuration = 50000; // 50 seconds
+
+    while ((status === 'running' || status === 'pending') && (Date.now() - startTime < maxDuration)) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const pollResponse = await fetch(`https://api.manus.ai/v1/tasks/${taskId}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'API_KEY': `${MANUS_API_KEY}`,
+        },
+      });
+
+      if (!pollResponse.ok) {
+        const pollError = await pollResponse.text();
+        console.error(`Polling error (${pollResponse.status}):`, pollError);
+        throw new Error(`Polling failed: ${pollError}`);
+      }
+
+      const pollData = await pollResponse.json();
+      status = pollData.status;
+      console.log(`Polling task ${taskId}: ${status}`);
+
+      if (status === 'completed') {
+        // Step 3: The Final Return - Extract text
+        // Based on docs, output is an array. We look for the assistant's text.
+        const output = pollData.output || [];
+        const assistantMessages = output.filter((m: any) => m.role === 'assistant');
+        
+        let finalReply = "";
+        assistantMessages.forEach((m: any) => {
+          if (m.content && Array.isArray(m.content)) {
+            m.content.forEach((c: any) => {
+              if (c.text) finalReply += c.text + "\n";
+            });
+          }
+        });
+
+        if (!finalReply.trim()) {
+           finalReply = "The agent finished the task but provided no text output.";
+        }
+
+        return new Response(JSON.stringify({ text: finalReply.trim() }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      if (status === 'error' || status === 'failed') {
+        throw new Error(`Manus Task failed: ${pollData.error || 'Unknown error'}`);
+      }
+    }
+
+    // If we timeout or stay in a loop without completing
+    if (status === 'running' || status === 'pending') {
+      return new Response(JSON.stringify({ 
+        text: "The agent is still working, but the response is taking a bit longer. You can track it here:",
+        task_url: `https://manus.im/app/${taskId}` 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    throw new Error(`Unexpected final status: ${status}`);
 
   } catch (error) {
     console.error('Edge Function Catch-all Error:', error.message);
