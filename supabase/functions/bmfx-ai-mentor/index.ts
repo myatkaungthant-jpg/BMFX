@@ -36,8 +36,9 @@ serve(async (req) => {
     const response = await fetch('https://api.manus.ai/v1/tasks', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MANUS_API_KEY}`,
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'API_KEY': `${MANUS_API_KEY}`,
       },
       body: JSON.stringify({
         prompt: prompt
