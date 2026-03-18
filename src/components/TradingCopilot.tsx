@@ -168,12 +168,12 @@ export const TradingCopilot = () => {
         setMessages(prev => [...prev.filter(m => m.role !== 'system' || m.content !== 'Attaching recent trade context...'), aiMessage]);
       }
     } catch (err: any) {
-      console.error('Chat error:', err);
+      console.error('CRITICAL CHAT ERROR:', err); // Log the full error object!
       setMessages(prev => [
         ...prev.filter(m => m.role !== 'system' || m.content !== 'Attaching recent trade context...'), 
         {
           role: 'system',
-          content: `Error: ${err.message || 'The AI Mentor is currently unavailable. Please check if the Edge Function is deployed.'}`,
+          content: `Error: ${err.message || 'The AI Mentor is currently unavailable. Check console for details.'}`,
           timestamp: new Date()
         }
       ]);

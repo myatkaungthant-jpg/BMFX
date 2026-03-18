@@ -60,7 +60,7 @@ export const useTradingMentor = () => {
       return data;
 
     } catch (err: any) {
-      console.error('Error in useTradingMentor:', err);
+      console.error('HOOK_ERROR_RAW:', err); // Log the full error object!
       const errorMessage = err.message || 'An unexpected error occurred.';
       setError(errorMessage);
       throw err; // Re-throw to be caught by the component
