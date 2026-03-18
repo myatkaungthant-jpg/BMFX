@@ -21,6 +21,7 @@ import { Admin } from './pages/Admin';
 import { TradingJournal } from './pages/TradingJournal';
 import { TradingChart } from './pages/TradingChart';
 import { AdminRoute } from './components/AdminRoute';
+import { TradingCopilot } from './components/TradingCopilot';
 
 // Initialize React Query client
 const queryClient = new QueryClient();
@@ -213,6 +214,7 @@ export default function App() {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
           </Routes>
+          <TradingCopilot />
         </BrowserRouter>
       </QueryClientProvider>
     </ThemeProvider>
