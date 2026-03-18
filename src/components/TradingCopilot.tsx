@@ -163,15 +163,22 @@ export const TradingCopilot = () => {
       }
 
       if (result) {
+        let finalContent;
         // If there is a task_url, we want to keep the whole JSON for the card UI
-        // Otherwise, just extract the text
-        const aiResponseContent = result.task_url 
-          ? JSON.stringify(result) 
-          : (result.text || result.content || (typeof result === 'string' ? result : JSON.stringify(result)));
+        if (result.task_url) {
+          finalContent = JSON.stringify(result);
+        } else {
+          // Otherwise, just extract the text and append the usage summary
+          finalContent = result.text || result.content || (typeof result === 'string' ? result : JSON.stringify(result));
+          // Append small, styled credit consumption message
+          if (aiCost > 0) {
+            finalContent += `\n\n---\n*💰 Consumed ${aiCost} credits*`;
+          }
+        }
         
         const aiMessage: Message = {
           role: 'assistant',
-          content: aiResponseContent,
+          content: finalContent,
           timestamp: new Date()
         };
         setMessages(prev => [...prev.filter(m => m.role !== 'system' || m.content !== 'Attaching recent trade context...'), aiMessage]);

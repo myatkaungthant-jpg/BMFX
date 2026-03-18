@@ -120,8 +120,16 @@ RULES:
            finalReply = "The agent finished the task but provided no text output.";
         }
 
-        // Manus cost is usually 9-10 credits for reasoning tasks
-        const cost = pollData.credits || pollData.usage?.total_credits || 10;
+        // Log pollData for one test run to verify the credit field
+        console.log(`Task ${taskId} completed. Info:`, JSON.stringify({
+          status: pollData.status,
+          credit_usage: pollData.credit_usage,
+          usage: pollData.usage,
+        }));
+
+        // Manus cost is usually 9-13 credits for reasoning tasks
+        // Based on docs, the field might be credit_usage
+        const cost = pollData.credit_usage || pollData.credits || pollData.usage?.total_credits || 15;
 
         return new Response(JSON.stringify({ 
           text: finalReply.trim(),
