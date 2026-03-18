@@ -148,6 +148,8 @@ export const TradingCopilot = () => {
 
       // Decrement credit in DB based on actual AI cost (default to 10 if not provided)
       const aiCost = result.cost || 10;
+      console.log(`DEDUCTING ${aiCost} CREDITS FROM ${userId}. (REASON: ${result.cost ? 'MANUS_SYNC' : 'SAFE_DEFAULT'})`);
+
       const { error: rpcError } = await supabase.rpc('decrement_user_credit', { 
         user_uuid: userId,
         amount: aiCost
