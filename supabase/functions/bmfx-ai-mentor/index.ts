@@ -30,6 +30,8 @@ serve(async (req) => {
 
     prompt += ` \n\nGive a short, 3-sentence actionable advice.`
 
+    console.log(`Invoking bmfx-ai-mentor for user: ${studentQuestion.slice(0, 20)}...`);
+
     // Call Manus AI API
     const response = await fetch('https://api.manus.ai/v1/tasks', {
       method: 'POST',
@@ -44,23 +46,32 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Manus AI API Error (${response.status}):`, errorText);
-      throw new Error(`Manus API Error: ${errorText || response.statusText}`);
+      console.error(`Manus AI API returned ${response.status}:`, errorText);
+      
+      // Explicitly handle 401 from Manus AI
+      if (response.status === 401) {
+        throw new Error("Manus AI API Error: 401 Unauthorized. Please check your MANUS_API_KEY in Supabase secrets.");
+      }
+      
+      throw new Error(`Manus API Error (${response.status}): ${errorText || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('Manus AI API Success');
+    
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
+    console.error('Edge Function Catch-all Error:', error.message);
     return new Response(JSON.stringify({ 
       error: error.message,
       details: "Check your MANUS_API_KEY and Ensure the Edge Function is deployed."
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 400, // Returning 400 so the client sees the custom error message
     });
   }
 });
