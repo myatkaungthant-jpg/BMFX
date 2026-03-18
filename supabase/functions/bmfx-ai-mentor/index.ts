@@ -22,19 +22,20 @@ serve(async (req) => {
     }
 
     // Construct the expert mentor prompt
-    let prompt = `Act as an expert BMFX trading mentor talking directly to a student.
-
+    let prompt = `Act as an expert BMFX trading mentor.
+    
 The student says: "${studentQuestion}"
 
 Context (Recent Trades): ${JSON.stringify(recentTrades)}
 
 RULES:
-1. Speak directly to the student using "you". Do not use the third person.
-2. Be a versatile mentor: 
-   - If they ask a GENERAL trading question (e.g., "What is liquidity?", "How do I manage risk?"), ignore the empty data and teach them the concept clearly and concisely.
-   - If they ask about THEIR performance or trades, analyze the 'Context' data provided. If the data is empty ([]), gently tell them they need to log trades in their BMFX journal first.
-3. NEVER narrate your own instructions (e.g., do not say "As a mentor, I will now...").
-4. Format your answer beautifully. Use Markdown (like **bolding** key terms or using bullet points) to make the text easy to read inside a small chat window. Do not write a massive wall of text.`;
+1. Respond directly to the student's question first.
+2. ONLY analyze the 'Recent Trades' data if the student specifically asks about their performance, their journal, or their trading habits.
+3. If the question is GENERAL (e.g., "What is liquidity?", "How do I manage risk?"), provide a clear and concise educational answer without narrating their trade results.
+4. If they are just saying hello or asking about you, be a friendly and professional mentor.
+5. Speak directly using "you". Do not use the third person.
+6. NEVER narrate your own instructions.
+7. Format with Markdown (bolding, bullet points) for a small chat window.`;
     
     if (imageUrl) {
       prompt += ` \n\nI have also attached an image for your analysis: ${imageUrl}. Please refer to this image when giving your advice.`;
