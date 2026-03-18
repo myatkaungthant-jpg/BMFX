@@ -157,9 +157,7 @@ export const TradingCopilot = () => {
       }
 
       if (result) {
-        // If the result is a full object from Manus AI, we need to extract the text.
-        // Based on the user's Part 2, I returned the whole JSON.
-        // I'll assume it has a field 'text' or just use the whole string if it's simple.
+        // ... extraction logic ...
         const aiResponseContent = result.text || result.content || (typeof result === 'string' ? result : JSON.stringify(result));
         
         const aiMessage: Message = {
@@ -168,15 +166,17 @@ export const TradingCopilot = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev.filter(m => m.role !== 'system' || m.content !== 'Attaching recent trade context...'), aiMessage]);
-      } else if (aiError) {
-        throw new Error(aiError);
       }
     } catch (err: any) {
-      setMessages(prev => [...prev, {
-        role: 'system',
-        content: `Error: ${err.message}`,
-        timestamp: new Date()
-      }]);
+      console.error('Chat error:', err);
+      setMessages(prev => [
+        ...prev.filter(m => m.role !== 'system' || m.content !== 'Attaching recent trade context...'), 
+        {
+          role: 'system',
+          content: `Error: ${err.message || 'The AI Mentor is currently unavailable. Please check if the Edge Function is deployed.'}`,
+          timestamp: new Date()
+        }
+      ]);
     }
 
     // Reset image after sending

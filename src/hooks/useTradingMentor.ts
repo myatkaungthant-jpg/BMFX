@@ -52,7 +52,7 @@ export const useTradingMentor = () => {
       console.error('Error in useTradingMentor:', err);
       const errorMessage = err.message || 'An unexpected error occurred.';
       setError(errorMessage);
-      return null;
+      throw err; // Re-throw to be caught by the component
     } finally {
       setIsLoading(false);
     }
