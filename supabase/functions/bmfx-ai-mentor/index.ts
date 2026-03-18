@@ -21,16 +21,27 @@ serve(async (req) => {
       throw new Error('MANUS_API_KEY is not set in environment variables.')
     }
 
-    // Construct the hidden prompt
-    let prompt = `You are a BMFX trading mentor. The student asks: ${studentQuestion}. Here is their recent anonymous trade data: ${JSON.stringify(recentTrades)}.`
+    // Construct the expert mentor prompt
+    let prompt = `Act as an expert BMFX trading mentor talking directly to a student.
+
+The student says: "${studentQuestion}"
+
+Context (Recent Trades): ${JSON.stringify(recentTrades)}
+
+RULES:
+1. Speak directly to the student using "you". Do not use the third person.
+2. Be a versatile mentor: 
+   - If they ask a GENERAL trading question (e.g., "What is liquidity?", "How do I manage risk?"), ignore the empty data and teach them the concept clearly and concisely.
+   - If they ask about THEIR performance or trades, analyze the 'Context' data provided. If the data is empty ([]), gently tell them they need to log trades in their BMFX journal first.
+3. NEVER narrate your own instructions (e.g., do not say "As a mentor, I will now...").
+4. Format your answer beautifully. Use Markdown (like **bolding** key terms or using bullet points) to make the text easy to read inside a small chat window. Do not write a massive wall of text.`;
     
     if (imageUrl) {
-      prompt += ` \n\nI have also attached an image for your analysis: ${imageUrl}. Please refer to this image when giving your advice.`
+      prompt += ` \n\nI have also attached an image for your analysis: ${imageUrl}. Please refer to this image when giving your advice.`;
     }
 
-    prompt += ` \n\nGive a short, 3-sentence actionable advice.`
-
     console.log(`Invoking bmfx-ai-mentor for user: ${studentQuestion.slice(0, 20)}...`);
+    console.log(`Context: Received ${recentTrades?.length || 0} recent trades.`);
 
     // Call Manus AI API
     const response = await fetch('https://api.manus.ai/v1/tasks', {

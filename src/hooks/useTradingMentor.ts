@@ -18,9 +18,8 @@ export const useTradingMentor = () => {
       // 2. Query the local Supabase trades table (trading_logs) for 5 most recent closed trades
       const { data: trades, error: tradesError } = await supabase
         .from('trading_logs')
-        .select('symbol, side, pnl_percentage, mood, rules_checked')
+        .select('symbol, side, status, pnl_percentage, mood, rules_checked')
         .eq('user_id', session.user.id)
-        .neq('status', 'Open')
         .order('timestamp', { ascending: false })
         .limit(5);
 
@@ -30,10 +29,16 @@ export const useTradingMentor = () => {
       const recentTrades = (trades || []).map(t => ({
         symbol: t.symbol,
         side: t.side,
+        status: t.status,
         pnl_percent: t.pnl_percentage,
         mood: t.mood,
         checklist: t.rules_checked
       }));
+
+      console.log(`DEBUG: Sending ${recentTrades.length} trades to AI Mentor.`);
+      if (recentTrades.length > 0) {
+        console.table(recentTrades);
+      }
 
       // 4. Call supabase.functions.invoke('bmfx-ai-mentor')
       const { data, error: functionError } = await supabase.functions.invoke('bmfx-ai-mentor', {
