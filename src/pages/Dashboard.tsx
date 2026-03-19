@@ -4,106 +4,82 @@ import { BookOpen, CheckCircle, PlayCircle, ChevronRight, Loader2, TrendingUp, A
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import { LESSONS_DATA } from '../constants';
 
 export function Dashboard() {
   const { profile } = useAuth();
-  const [stats, setStats] = useState({
-    completedLessons: 0,
-    totalLessons: 0,
-    progress: 0
-  });
   const [nextLesson, setNextLesson] = useState<{ courseId: string, lessonId: string, title: string, isNew?: boolean } | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile) {
-      fetchDashboardData();
-    }
-  }, [profile?.id]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
+  const { data: dashboardData, isLoading: statsLoading } = useQuery({
+    queryKey: ['dashboard-stats', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return null;
       
       // 1. Fetch total lessons count
-      const { count: total, error: totalError } = await supabase
+      const { count: total } = await supabase
         .from('lessons')
         .select('*', { count: 'exact', head: true });
       
-      if (totalError) throw totalError;
-      
       // 2. Fetch user's completed progress
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData } = await supabase
         .from('user_progress')
         .select('course_id, lesson_id, is_completed, updated_at')
-        .eq('user_id', profile!.id);
+        .eq('user_id', profile.id);
 
-      if (progressError) throw progressError;
-
-      const completedLessons = progressData.filter(p => p.is_completed);
+      const completedLessons = progressData?.filter(p => p.is_completed) || [];
       const completedCount = completedLessons.length;
       const totalCount = total || 0;
       const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-      setStats({
-        completedLessons: completedCount,
-        totalLessons: totalCount,
-        progress: progressPercent
-      });
-
       // 3. Find "Resume Learning" lesson
-      // Fetch all lessons to have context
-      const { data: allLessons, error: allLessonsError } = await supabase
+      const { data: allLessons } = await supabase
         .from('lessons')
         .select('id, course_id, lesson_id, title, order_index')
         .order('order_index', { ascending: true });
-      
-      if (allLessonsError) throw allLessonsError;
 
-      // Logic:
-      // a. Find the lesson with the most recent updated_at in user_progress
-      const mostRecentProgress = progressData.sort((a, b) => 
+      const mostRecentProgress = progressData?.sort((a, b) => 
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       )[0];
 
-      let targetLesson = null;
-
-      if (mostRecentProgress) {
+      let targetLesson: any = null;
+      if (mostRecentProgress && allLessons) {
         if (mostRecentProgress.is_completed) {
-          // If the most recent one is finished, find the next one in sequence (all modules)
           const currentIndex = allLessons.findIndex(l => l.course_id === mostRecentProgress.course_id && l.lesson_id === mostRecentProgress.lesson_id);
           targetLesson = allLessons[currentIndex + 1] || null;
         } else {
-          // If it's not finished, resume it
           targetLesson = allLessons.find(l => l.course_id === mostRecentProgress.course_id && l.lesson_id === mostRecentProgress.lesson_id);
         }
       }
 
-      // If no progress at all, show the first lesson ever
-      if (!targetLesson && allLessons.length > 0) {
+      if (!targetLesson && allLessons && allLessons.length > 0) {
         targetLesson = { ...allLessons[0], isNew: true };
       }
 
-      if (targetLesson) {
-        setNextLesson({
+      return {
+        stats: {
+          completedLessons: completedCount,
+          totalLessons: totalCount,
+          progress: progressPercent
+        },
+        nextLesson: targetLesson ? {
           courseId: targetLesson.course_id,
           lessonId: targetLesson.lesson_id,
           title: targetLesson.title,
-          isNew: (targetLesson as any).isNew
-        });
-      }
+          isNew: targetLesson.isNew
+        } : null
+      };
+    },
+    enabled: !!profile?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
 
-      // 4. Fetch Announcements (Admin posts + New Modules + New Lessons)
-      await fetchAnnouncements();
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (profile) {
+      fetchAnnouncements();
     }
-  };
+  }, [profile?.id]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -142,7 +118,7 @@ export function Dashboard() {
     }
   };
 
-  if (loading) {
+  if (statsLoading && !dashboardData) {
     return (
       <Layout>
         <div className="flex items-center justify-center py-20">
@@ -156,7 +132,7 @@ export function Dashboard() {
     <Layout>
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name?.split(' ')[0] || 'Trader'}!</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || 'Trader'}!</h1>
           <p className="text-zinc-600 dark:text-zinc-400">Track your progress and continue your trading journey.</p>
         </div>
 
@@ -168,13 +144,13 @@ export function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-zinc-500 font-medium">Overall Progress</p>
-                <p className="text-2xl font-bold">{stats.progress}%</p>
+                <p className="text-2xl font-bold">{dashboardData?.stats.progress || 0}%</p>
               </div>
             </div>
             <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
               <div 
-                className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-1000" 
-                style={{ width: `${stats.progress}%` }}
+                className="bg-blue-600 dark:bg-blue-50 h-2 rounded-full transition-all duration-1000" 
+                style={{ width: `${dashboardData?.stats.progress || 0}%` }}
               />
             </div>
           </div>
@@ -186,7 +162,7 @@ export function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-zinc-500 font-medium">Lessons Completed</p>
-                <p className="text-2xl font-bold">{stats.completedLessons} / {stats.totalLessons}</p>
+                <p className="text-2xl font-bold">{dashboardData?.stats.completedLessons || 0} / {dashboardData?.stats.totalLessons || 0}</p>
               </div>
             </div>
           </div>
@@ -201,9 +177,9 @@ export function Dashboard() {
                 <p className="text-2xl font-bold">
                   {profile?.role === 'admin' ? 'Admin' : 
                    profile?.role === 'free' ? 'Free User' :
-                   stats.completedLessons === 0 ? 'Student' :
-                   stats.completedLessons < 3 ? 'Novice' :
-                   stats.completedLessons < 8 ? 'Pro' : 'Elite'}
+                   (dashboardData?.stats.completedLessons || 0) === 0 ? 'Student' :
+                   (dashboardData?.stats.completedLessons || 0) < 3 ? 'Novice' :
+                   (dashboardData?.stats.completedLessons || 0) < 8 ? 'Pro' : 'Elite'}
                 </p>
               </div>
             </div>
@@ -228,22 +204,22 @@ export function Dashboard() {
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#7AB8E5]/20 dark:bg-emerald-500/10 blur-3xl -mr-20 -mt-20 rounded-full" />
               </div>
-            ) : nextLesson ? (
+            ) : dashboardData?.nextLesson ? (
               <div className="bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl p-8 relative overflow-hidden shadow-xl group">
                 <div className="relative z-10">
                   <span className="inline-block px-3 py-1 bg-white/20 dark:bg-black/10 text-xs font-bold rounded-full mb-4 backdrop-blur-sm">
-                    {nextLesson.isNew ? 'GET STARTED' : 'RESUME LEARNING'}
+                    {dashboardData.nextLesson.isNew ? 'GET STARTED' : 'RESUME LEARNING'}
                   </span>
-                  <h2 className="text-3xl font-bold mb-2">{nextLesson.title}</h2>
+                  <h2 className="text-3xl font-bold mb-2">{dashboardData.nextLesson.title}</h2>
                   <p className="text-zinc-400 dark:text-zinc-500 mb-6 max-w-md capitalize">
-                    {nextLesson.courseId.replace('-', ' ')} Module • Lesson {nextLesson.lessonId}
+                    {dashboardData.nextLesson.courseId.replace('-', ' ')} Module • Lesson {dashboardData.nextLesson.lessonId}
                   </p>
                   <Link 
-                    to={`/courses/${nextLesson.courseId}/lessons/${nextLesson.lessonId}`}
+                    to={`/courses/${dashboardData.nextLesson.courseId}/lessons/${dashboardData.nextLesson.lessonId}`}
                     className="inline-flex items-center gap-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105"
                   >
                     <PlayCircle size={20} />
-                    {nextLesson.isNew ? 'Start Lesson' : 'Continue Lesson'}
+                    {dashboardData.nextLesson.isNew ? 'Start Lesson' : 'Continue Lesson'}
                   </Link>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#7AB8E5]/20 dark:bg-emerald-500/20 blur-3xl -mr-20 -mt-20 rounded-full group-hover:bg-[#7AB8E5]/30 dark:group-hover:bg-emerald-500/30 transition-colors" />

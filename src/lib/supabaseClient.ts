@@ -8,8 +8,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    // Disable the storage lock to prevent hangs in multi-tab or Strict Mode environments
-    // This is a common issue in local development
     storageKey: 'bmfx-auth-token',
   }
 });

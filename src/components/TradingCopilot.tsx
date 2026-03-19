@@ -34,9 +34,11 @@ export const TradingCopilot = () => {
   useEffect(() => {
     if (profile?.id) {
       setUserId(profile.id);
-      fetchCredits(profile.id);
+      if (profile.role !== 'free') {
+        fetchCredits(profile.id);
+      }
     }
-  }, [profile?.id]);
+  }, [profile?.id, profile?.role]);
 
   const fetchCredits = async (uid: string) => {
     try {
@@ -108,7 +110,7 @@ export const TradingCopilot = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !selectedImage) || isLoading || isUploading || credits.daily <= 0 || !userId) return;
+    if ((!input.trim() && !selectedImage) || isLoading || isUploading || (credits.daily <= 0 && profile?.role !== 'free') || !userId || profile?.role === 'free') return;
 
     let imageUrl = null;
     if (selectedImage) {
@@ -223,11 +225,13 @@ export const TradingCopilot = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                <div className={`px-2 py-1 rounded-lg border ${credits.daily < 10 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    Credits: {credits.daily}/{credits.total}
-                  </span>
-                </div>
+                {profile?.role !== 'free' && (
+                  <div className={`px-2 py-1 rounded-lg border ${credits.daily < 10 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      Credits: {credits.daily}/{credits.total}
+                    </span>
+                  </div>
+                )}
                 <button 
                   onClick={() => setIsOpen(false)}
                   className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
