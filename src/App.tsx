@@ -216,7 +216,6 @@ export default function App() {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
           </Routes>
-          <TradingCopilot />
         </BrowserRouter>
       </QueryClientProvider>
     </AuthProvider>

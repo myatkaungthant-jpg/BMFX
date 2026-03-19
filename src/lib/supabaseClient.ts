@@ -9,6 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'bmfx-auth-token',
+    lock: (name: string, timeout: number, fn: () => Promise<any>) => fn()
   }
 });
 

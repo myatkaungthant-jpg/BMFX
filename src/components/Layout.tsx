@@ -4,6 +4,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import { useTheme } from './ThemeProvider';
+import { TradingCopilot } from './TradingCopilot';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -156,6 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+      <TradingCopilot />
     </div>
   );
 }
