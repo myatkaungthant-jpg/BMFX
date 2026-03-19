@@ -27,7 +27,7 @@ interface Lesson {
 }
 
 export function Courses() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
@@ -39,7 +39,7 @@ export function Courses() {
 
   useEffect(() => {
     fetchData();
-  }, [profile]);
+  }, [profile?.id, authLoading]);
 
   const fetchData = async () => {
     try {
@@ -273,7 +273,7 @@ export function Courses() {
                       const lessonIndex = parseInt(id);
                       // Admin has everything unlocked. 
                       // For students: first lesson is always unlocked, others unlocked if previous is completed
-                      const isUnlocked = isAdmin || lessonIndex === 1 || completedLessons.has(`${course.id}-${lessonIndex - 1}`);
+                      const isUnlocked = (isAdmin || lessonIndex === 1 || completedLessons.has(`${course.id}-${lessonIndex - 1}`)) && profile?.role !== 'free';
 
                       return (
                         <Link 

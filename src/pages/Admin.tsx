@@ -52,7 +52,7 @@ export function Admin() {
     if (!authLoading && profile && profile.role !== 'admin') {
       navigate('/dashboard');
     }
-  }, [profile, authLoading, navigate]);
+  }, [profile?.id, authLoading]);
 
   // New Lesson Form State
   const [newLesson, setNewLesson] = useState({
@@ -96,7 +96,7 @@ export function Admin() {
       setIsModalOpen(true);
       setIsAddingModule(true);
     }
-  }, [location, courses]); // Also watch courses to ensure courseId can be set after load
+  }, [location.search, courses.length]);
 
   const fetchUsers = async () => {
     try {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, User, Send, X, MessageSquare, Sparkles, Loader2, Paperclip, ImageIcon, Trash2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import { useTradingMentor } from '../hooks/useTradingMentor';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,6 +13,7 @@ interface Message {
 }
 
 export const TradingCopilot = () => {
+  const { profile, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,20 +30,13 @@ export const TradingCopilot = () => {
 
   // Hide on public pages
   const isPublicPage = ['/', '/login', '/pricing'].includes(pathname);
-  if (isPublicPage) return null;
 
   useEffect(() => {
-    // Fetch user and credits
-    const fetchUserAndCredits = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-        fetchCredits(session.user.id);
-      }
-    };
-
-    fetchUserAndCredits();
-  }, []);
+    if (profile?.id) {
+      setUserId(profile.id);
+      fetchCredits(profile.id);
+    }
+  }, [profile?.id]);
 
   const fetchCredits = async (uid: string) => {
     try {
@@ -200,6 +195,8 @@ export const TradingCopilot = () => {
     setImagePreview(null);
   };
 
+  if (isPublicPage) return null;
+
   return (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
       <AnimatePresence>
@@ -317,64 +314,76 @@ export const TradingCopilot = () => {
             </div>
 
             {/* Input Area */}
-            <form 
-              onSubmit={handleSend}
-              className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0"
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleImageSelect}
-              />
+            {loading ? (
+              <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center h-20 shrink-0">
+                <Loader2 className="animate-spin text-zinc-400" size={20} />
+              </div>
+            ) : profile?.role === 'free' ? (
+              <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-center shrink-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#7AB8E5] mb-2 font-bold italic">Premium Feature</p>
+                <p className="text-xs text-zinc-500 mb-3">AI Mentor is available for Student members. Upgrade to unlock!</p>
+                <button className="w-full py-2.5 bg-zinc-900 dark:bg-[#7AB8E5] text-white dark:text-zinc-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-lg">Become a Student</button>
+              </div>
+            ) : (
+              <form 
+                onSubmit={handleSend}
+                className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0"
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                />
 
-              {imagePreview && (
-                <div className="mb-3 relative inline-block group">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="w-20 h-20 object-cover rounded-xl border-2 border-emerald-500 shadow-lg"
-                  />
-                  <button 
+                {imagePreview && (
+                  <div className="mb-3 relative inline-block group">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-xl border-2 border-emerald-500 shadow-lg"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                      className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
                     type="button"
-                    onClick={() => { setSelectedImage(null); setImagePreview(null); }}
-                    className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading || isUploading || credits.daily <= 0}
+                    className="p-2.5 bg-zinc-100 dark:bg-zinc-950 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:text-emerald-500 transition-colors disabled:opacity-50"
                   >
-                    <X size={12} />
+                    <Paperclip size={18} />
+                  </button>
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={credits.daily > 0 ? "Ask your trading mentor..." : "Insufficient credits"}
+                    disabled={isLoading || isUploading || credits.daily <= 0 || profile?.role === 'free'}
+                    className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 transition-all font-medium"
+                  />
+                  <button
+                    type="submit"
+                    disabled={(isLoading || isUploading) || (!input.trim() && !selectedImage) || credits.daily <= 0}
+                    className="p-2.5 bg-zinc-900 dark:bg-emerald-600 text-white rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
+                  >
+                    {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   </button>
                 </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading || isUploading || credits.daily <= 0}
-                  className="p-2.5 bg-zinc-100 dark:bg-zinc-950 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:text-emerald-500 transition-colors disabled:opacity-50"
-                >
-                  <Paperclip size={18} />
-                </button>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={credits.daily > 0 ? "Ask your trading mentor..." : "Insufficient credits"}
-                  disabled={isLoading || isUploading || credits.daily <= 0}
-                  className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 transition-all font-medium"
-                />
-                <button
-                  type="submit"
-                  disabled={(isLoading || isUploading) || (!input.trim() && !selectedImage) || credits.daily <= 0}
-                  className="p-2.5 bg-zinc-900 dark:bg-emerald-600 text-white rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
-                >
-                  {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                </button>
-              </div>
-              {credits.daily <= 10 && credits.daily > 0 && (
-                <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter mt-2 text-center">Warning: Low Credits. Balance resets daily.</p>
-              )}
-            </form>
+                {credits.daily <= 10 && credits.daily > 0 && (
+                  <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter mt-2 text-center">Warning: Low Credits. Balance resets daily.</p>
+                )}
+              </form>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

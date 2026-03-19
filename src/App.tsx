@@ -55,10 +55,10 @@ const Login = () => {
         if (error) throw error;
         
         if (data.session) {
-          // If session exists (email confirmation disabled), it will redirect via the useAuth hook/session check
           setMessage('Account created successfully!');
         } else {
           setMessage('Check your email and confirm your account before logging in.');
+          setLoading(false); // Only reset loading if we aren't redirecting
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -66,10 +66,10 @@ const Login = () => {
           password,
         });
         if (error) throw error;
+        // Keep loading = true here. The useAuth hook will eventually trigger a redirect.
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
-    } finally {
       setLoading(false);
     }
   };
@@ -188,11 +188,13 @@ const Login = () => {
 };
 
 import { ThemeProvider } from './components/ThemeProvider';
+import { AuthProvider } from './contexts/AuthContext';
 
 export default function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
@@ -217,6 +219,7 @@ export default function App() {
           <TradingCopilot />
         </BrowserRouter>
       </QueryClientProvider>
-    </ThemeProvider>
-  );
+    </AuthProvider>
+  </ThemeProvider>
+);
 }

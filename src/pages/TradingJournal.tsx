@@ -16,6 +16,7 @@ import {
 
 import { Layout } from '../components/Layout';
 import { Toast } from '../components/Toast';
+import { useAuth } from '../hooks/useAuth';
 
 
 import { 
@@ -78,9 +79,10 @@ interface Trade {
 
 
 export function TradingJournal() {
+  const { profile, loading: authLoading } = useAuth();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const user = profile; // Use profile instead of local user state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchTrades = useCallback(async (userId: string) => {
@@ -123,30 +125,20 @@ export function TradingJournal() {
   }, []);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchTrades(session.user.id);
-      } else {
+    if (profile?.role === 'free') {
+      // Free users can only see up to 2 trades, so we DO fetch, 
+      // but maybe it's hanging? Let's just catch and finish.
+      if (user) {
+        fetchTrades(user.id).finally(() => setLoading(false));
+      } else if (authLoading === false) {
         setLoading(false);
       }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchTrades(session.user.id);
-      } else {
-        setUser(null);
-        setTrades([]);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchTrades]);
+    } else if (user) {
+      fetchTrades(user.id);
+    } else if (authLoading === false) {
+      setLoading(false);
+    }
+  }, [profile?.id, authLoading]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [newTrade, setNewTrade] = useState({
@@ -317,6 +309,11 @@ export function TradingJournal() {
     e.preventDefault();
     if (!user) return alert('You must be logged in to add trades.');
 
+    if (user.role === 'free' && trades.length >= 2 && !editingTrade) {
+      setToast({ message: 'Free limit reached (2 trades). Upgrade to Student for unlimited logs!', type: 'error' });
+      return;
+    }
+
     const tradeData = {
       user_id: user.id,
       symbol: newTrade.symbol || 'UNKNOWN',
@@ -414,6 +411,10 @@ export function TradingJournal() {
   };
 
   const handleEditTrade = (trade: Trade) => {
+    if (user?.role === 'free') {
+      setToast({ message: 'Editing is a Student feature. Upgrade to unlock!', type: 'error' });
+      return;
+    }
     setEditingTrade(trade);
     setNewTrade({
       symbol: trade.symbol,
@@ -438,6 +439,10 @@ export function TradingJournal() {
 
   const handleDeleteTrade = async (id: string) => {
     if (!user) return;
+    if (user.role === 'free') {
+      setToast({ message: 'Deleting is a Student feature. Upgrade to unlock!', type: 'error' });
+      return;
+    }
     if (confirm('Are you sure you want to delete this trade?')) {
       try {
         const { error } = await supabase
@@ -587,13 +592,26 @@ export function TradingJournal() {
               </div>
             </div>
 
-            <button 
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex items-center gap-2 bg-zinc-900 dark:bg-[#7AB8E5] text-white dark:text-zinc-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-zinc-900/10 dark:shadow-[#7AB8E5]/20"
-            >
-              <Plus size={20} />
-              <span>Add Entry</span>
-            </button>
+            {user?.role === 'free' && trades.length >= 2 ? (
+              <div className="flex flex-col items-end gap-1">
+                <button 
+                  disabled
+                  className="flex items-center gap-2 bg-zinc-400 dark:bg-zinc-800 text-zinc-200 dark:text-zinc-500 px-6 py-2.5 rounded-xl font-bold cursor-not-allowed opacity-50"
+                >
+                  <Plus size={20} />
+                  <span>Limit Reached</span>
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">Upgrade for more</span>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsDrawerOpen(true)}
+                className="flex items-center gap-2 bg-zinc-900 dark:bg-[#7AB8E5] text-white dark:text-zinc-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-zinc-900/10 dark:shadow-[#7AB8E5]/20"
+              >
+                <Plus size={20} />
+                <span>Add Entry</span>
+              </button>
+            )}
           </div>
         </div>
 

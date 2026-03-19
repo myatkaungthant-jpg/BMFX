@@ -21,7 +21,7 @@ export function Dashboard() {
     if (profile) {
       fetchDashboardData();
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const fetchDashboardData = async () => {
     try {
@@ -200,6 +200,7 @@ export function Dashboard() {
                 <p className="text-sm text-zinc-500 font-medium">Current Rank</p>
                 <p className="text-2xl font-bold">
                   {profile?.role === 'admin' ? 'Admin' : 
+                   profile?.role === 'free' ? 'Free User' :
                    stats.completedLessons === 0 ? 'Student' :
                    stats.completedLessons < 3 ? 'Novice' :
                    stats.completedLessons < 8 ? 'Pro' : 'Elite'}
@@ -211,7 +212,23 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {nextLesson ? (
+            {profile?.role === 'free' ? (
+              <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl p-8 relative overflow-hidden shadow-xl">
+                <div className="relative z-10">
+                  <span className="inline-block px-3 py-1 bg-white/20 dark:bg-zinc-900/10 text-xs font-bold rounded-full mb-4 backdrop-blur-sm italic">
+                    PREMIUM ACCESS
+                  </span>
+                  <h2 className="text-3xl font-bold mb-2">Unlock the Curriculum</h2>
+                  <p className="text-zinc-400 dark:text-zinc-500 mb-6 max-w-md">
+                    Become a Student member to access all 50+ professional trading lessons and start your journey.
+                  </p>
+                  <button className="inline-flex items-center gap-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105">
+                    Upgrade to Student
+                  </button>
+                </div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#7AB8E5]/20 dark:bg-emerald-500/10 blur-3xl -mr-20 -mt-20 rounded-full" />
+              </div>
+            ) : nextLesson ? (
               <div className="bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl p-8 relative overflow-hidden shadow-xl group">
                 <div className="relative z-10">
                   <span className="inline-block px-3 py-1 bg-white/20 dark:bg-black/10 text-xs font-bold rounded-full mb-4 backdrop-blur-sm">

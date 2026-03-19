@@ -34,11 +34,15 @@ export function Lesson() {
   const [hasNextLesson, setHasNextLesson] = useState(false);
 
   useEffect(() => {
+    if (profile?.role === 'free') {
+      navigate('/courses');
+      return;
+    }
     if (courseId && lessonId) {
       fetchLessonAndProgress();
       checkNextLesson();
     }
-  }, [profile, courseId, lessonId]);
+  }, [profile, courseId, lessonId, navigate]);
 
   const checkNextLesson = async () => {
     if (!courseId || !lessonId) return;

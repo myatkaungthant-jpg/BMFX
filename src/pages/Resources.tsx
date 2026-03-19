@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { Download, FileSpreadsheet, FileText, Upload, Trash2, Plus, X, Loader2, File as FileIcon, Search } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Upload, Trash2, Plus, X, Loader2, File as FileIcon, Search, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -16,7 +16,7 @@ interface Resource {
 }
 
 export function Resources() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -34,8 +34,12 @@ export function Resources() {
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
+    if (profile?.role === 'free') {
+      setLoading(false);
+      return;
+    }
     fetchResources();
-  }, []);
+  }, [profile?.id, authLoading]);
 
   const fetchResources = async () => {
     try {
@@ -189,7 +193,20 @@ export function Resources() {
           </div>
         </div>
         
-        {loading ? (
+        {profile?.role === 'free' ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 text-center px-6">
+            <div className="w-20 h-20 bg-[#7AB8E5]/10 dark:bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-6 border border-[#7AB8E5]/20 dark:border-emerald-500/20">
+              <Lock size={40} className="text-[#7AB8E5] dark:text-emerald-500" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Premium Resource Vault</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mb-8">
+              Our Resource Vault contains exclusive trading tools, templates, and spreadsheets. Upgrade to a Student account to unlock instant access.
+            </p>
+            <button className="px-8 py-4 bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-2xl font-bold hover:scale-105 transition-transform shadow-xl shadow-blue-500/20 dark:shadow-emerald-500/20">
+              Become a Student Member
+            </button>
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-zinc-400" size={32} />
           </div>

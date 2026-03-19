@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email text UNIQUE NOT NULL,
   full_name text,
   avatar_url text,
-  role text DEFAULT 'student'::text NOT NULL,
+  role text DEFAULT 'free'::text NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL
 );
 
@@ -12,14 +12,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;
 CREATE POLICY "Public profiles are viewable by everyone."
   ON public.profiles FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can insert their own profile." ON public.profiles;
 CREATE POLICY "Users can insert their own profile."
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile." ON public.profiles;
 CREATE POLICY "Users can update own profile."
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
@@ -27,6 +30,8 @@ CREATE POLICY "Users can update own profile."
 -- Function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  default_role text := 'free';
 BEGIN
   INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
   VALUES (
@@ -34,7 +39,7 @@ BEGIN
     new.email,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url',
-    COALESCE(new.raw_user_meta_data->>'role', 'student')
+    COALESCE(new.raw_user_meta_data->>'role', default_role)
   );
   RETURN new;
 END;

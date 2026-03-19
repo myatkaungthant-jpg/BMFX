@@ -40,7 +40,7 @@ interface Post {
 }
 
 export function Feed() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
@@ -68,7 +68,7 @@ export function Feed() {
     return () => {
       window.removeEventListener('profile-updated', handleProfileUpdate);
     };
-  }, []);
+  }, [profile?.id, authLoading]);
 
   const fetchPosts = async () => {
     try {
@@ -339,73 +339,80 @@ export function Feed() {
         <h1 className="text-3xl font-bold mb-8">Community Feed</h1>
 
         {/* Post Creator */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-8">
-          <form onSubmit={handleCreatePost}>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#7AB8E5] dark:bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  profile?.full_name?.charAt(0) || 'U'
-                )}
-              </div>
-              <div className="flex-1">
-                <textarea
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  placeholder="Share your thoughts with the community..."
-                  className="w-full bg-transparent border-none focus:ring-0 resize-none min-h-[80px] text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
-                />
-                
-                {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-4 mb-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                        <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+        {profile?.role !== 'free' ? (
+          <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-8">
+            <form onSubmit={handleCreatePost}>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-full bg-[#7AB8E5] dark:bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    profile?.full_name?.charAt(0) || 'U'
+                  )}
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    placeholder="Share your thoughts with the community..."
+                    className="w-full bg-transparent border-none focus:ring-0 resize-none min-h-[80px] text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                  />
+                  
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-4 mb-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                          <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                  <div>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={handleImageSelect}
-                    />
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <div>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleImageSelect}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 text-zinc-500 hover:text-[#7AB8E5] dark:hover:text-emerald-500 transition-colors"
+                      >
+                        <ImageIcon size={20} />
+                        <span className="text-sm font-medium">Add Image</span>
+                      </button>
+                    </div>
                     <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 text-zinc-500 hover:text-[#7AB8E5] dark:hover:text-emerald-500 transition-colors"
+                      type="submit"
+                      disabled={(!newPostContent.trim() && selectedImages.length === 0) || uploadingImage}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <ImageIcon size={20} />
-                      <span className="text-sm font-medium">Add Image</span>
+                      {uploadingImage ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                      Post
                     </button>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={(!newPostContent.trim() && selectedImages.length === 0) || uploadingImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {uploadingImage ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                    Post
-                  </button>
                 </div>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        ) : (
+          <div className="bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 mb-8 text-center">
+            <p className="text-zinc-500 text-sm mb-3">Posting is a Student feature. Join the community to share your journey!</p>
+            <button className="px-6 py-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform">Get Student Package</button>
+          </div>
+        )}
 
         {/* Feed List */}
         {loading ? (
@@ -507,7 +514,13 @@ export function Feed() {
                   {/* Post Actions */}
                   <div className="flex items-center gap-6 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                     <button
-                      onClick={() => toggleLike(post.id, hasLiked)}
+                      onClick={() => {
+                        if (profile?.role === 'free') {
+                          setErrorMsg('Liking is a Student feature. Upgrade to join!');
+                          return;
+                        }
+                        toggleLike(post.id, hasLiked);
+                      }}
                       className={`flex items-center gap-2 transition-colors ${
                         hasLiked 
                           ? 'text-red-500' 
@@ -546,31 +559,37 @@ export function Feed() {
                       >
                         <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
                           {/* Comment Input */}
-                          <form onSubmit={(e) => handleAddComment(e, post.id)} className="flex gap-3 mb-6">
-                            <div className="w-8 h-8 rounded-full bg-[#7AB8E5] dark:bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden text-sm">
-                              {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                              ) : (
-                                profile?.full_name?.charAt(0) || 'U'
-                              )}
+                          {profile?.role !== 'free' ? (
+                            <form onSubmit={(e) => handleAddComment(e, post.id)} className="flex gap-3 mb-6">
+                              <div className="w-8 h-8 rounded-full bg-[#7AB8E5] dark:bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden text-sm">
+                                {profile?.avatar_url ? (
+                                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                  profile?.full_name?.charAt(0) || 'U'
+                                )}
+                              </div>
+                              <div className="flex-1 flex gap-2">
+                                <input
+                                  type="text"
+                                  value={newCommentContent[post.id] || ''}
+                                  onChange={(e) => setNewCommentContent(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                  placeholder="Write a comment..."
+                                  className="flex-1 bg-zinc-100 dark:bg-zinc-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-[#9CD5FF] dark:focus:ring-emerald-500"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={!newCommentContent[post.id]?.trim()}
+                                  className="p-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                >
+                                  <Send size={16} />
+                                </button>
+                              </div>
+                            </form>
+                          ) : (
+                            <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3 mb-6 text-center">
+                              <p className="text-zinc-500 text-xs">Commenting is a Student feature.</p>
                             </div>
-                            <div className="flex-1 flex gap-2">
-                              <input
-                                type="text"
-                                value={newCommentContent[post.id] || ''}
-                                onChange={(e) => setNewCommentContent(prev => ({ ...prev, [post.id]: e.target.value }))}
-                                placeholder="Write a comment..."
-                                className="flex-1 bg-zinc-100 dark:bg-zinc-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-[#9CD5FF] dark:focus:ring-emerald-500"
-                              />
-                              <button
-                                type="submit"
-                                disabled={!newCommentContent[post.id]?.trim()}
-                                className="p-2 bg-[#7AB8E5] dark:bg-emerald-600 hover:bg-[#9CD5FF] dark:hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                              >
-                                <Send size={16} />
-                              </button>
-                            </div>
-                          </form>
+                          )}
 
                           {/* Comments List */}
                           <div className="space-y-4">
