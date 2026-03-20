@@ -92,8 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 10000);
 
     // 1. Initial Session Check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!mounted) return;
+      if (error) {
+        console.error('[AuthContext] Error getting session:', error.message, error);
+      }
       console.log('[AuthContext] Initial session check:', session ? 'User logged in' : 'No user');
       
       const user = session?.user ?? null;

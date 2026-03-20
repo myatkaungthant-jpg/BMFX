@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -37,6 +37,21 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for errors in the URL (e.g. after email confirmation redirect)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    const errorMsg = hashParams.get('error_description') || searchParams.get('error_description');
+    const errorCode = hashParams.get('error') || searchParams.get('error');
+
+    if (errorMsg) {
+      setError(decodeURIComponent(errorMsg).replace(/\+/g, ' '));
+    } else if (errorCode) {
+      setError(`Authentication error: ${errorCode}`);
+    }
+  }, []);
 
   if (session) return <Navigate to="/dashboard" replace />;
   
