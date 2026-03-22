@@ -15,20 +15,25 @@ export const useTradingMentor = () => {
       if (sessionError) throw sessionError;
       if (!session) throw new Error("Authentication required to use the AI Mentor.");
 
-      // 2. Query the local Supabase trades table (trading_logs) for 5 most recent closed trades
+      // 2. Query the local Supabase trades table (trading_logs) for 20 most recent trades
       const { data: trades, error: tradesError } = await supabase
         .from('trading_logs')
-        .select('symbol, side, status, pnl_percentage, mood, rules_checked')
+        .select('symbol, side, status, pnl_percentage, mood, rules_checked, timestamp, entry, sl, tp, exit_price')
         .eq('user_id', session.user.id)
         .order('timestamp', { ascending: false })
-        .limit(5);
+        .limit(20);
 
       if (tradesError) throw tradesError;
 
       // 3. Map this data to safe, anonymous fields
       const recentTrades = (trades || []).map(t => ({
+        timestamp: t.timestamp,
         symbol: t.symbol,
         side: t.side,
+        entry: t.entry,
+        sl: t.sl,
+        tp: t.tp,
+        exit: t.exit_price,
         status: t.status,
         pnl_percent: t.pnl_percentage,
         mood: t.mood,

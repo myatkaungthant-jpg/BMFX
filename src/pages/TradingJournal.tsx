@@ -47,10 +47,12 @@ import {
   Trash2,
   Check,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Calculator
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
+import { PositionSizeCalculator } from '../components/PositionSizeCalculator';
 
 
 
@@ -1290,6 +1292,15 @@ export function TradingJournal() {
                     </div>
                   )}
 
+
+                  {/* Position Size Calculator Tool */}
+                  <div className="py-4 border-b border-zinc-100 dark:border-zinc-900 px-2">
+                    <PositionSizeCalculator 
+                      entry={newTrade.entry}
+                      sl={newTrade.sl}
+                      tp={newTrade.tp}
+                    />
+                  </div>
 
                   {/* Entry */}
                   <div className="group flex items-center min-h-[44px] hover:bg-zinc-50 dark:hover:bg-zinc-900/50 rounded-lg px-2 transition-colors">
