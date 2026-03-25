@@ -4,6 +4,7 @@ import { Download, FileSpreadsheet, FileText, Upload, Trash2, Plus, X, Loader2, 
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Link } from 'react-router-dom';
 
 interface Resource {
   id: string;
@@ -202,9 +203,9 @@ export function Resources() {
             <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mb-8">
               Our Resource Vault contains exclusive trading tools, templates, and spreadsheets. Upgrade to a Student account to unlock instant access.
             </p>
-            <button className="px-8 py-4 bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-2xl font-bold hover:scale-105 transition-transform shadow-xl shadow-blue-500/20 dark:shadow-emerald-500/20">
+            <Link to="/pricing" className="px-8 py-4 inline-block bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-2xl font-bold hover:scale-105 transition-transform shadow-xl shadow-blue-500/20 dark:shadow-emerald-500/20">
               Become a Student Member
-            </button>
+            </Link>
           </div>
         ) : loading ? (
           <div className="flex justify-center py-20">

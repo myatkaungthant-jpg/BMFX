@@ -198,9 +198,9 @@ export function Dashboard() {
                   <p className="text-zinc-400 dark:text-zinc-500 mb-6 max-w-md">
                     Become a Student member to access all 50+ professional trading lessons and start your journey.
                   </p>
-                  <button className="inline-flex items-center gap-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105">
+                  <Link to="/pricing" className="inline-flex items-center gap-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold transition-all transform hover:scale-105">
                     Upgrade to Student
-                  </button>
+                  </Link>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#7AB8E5]/20 dark:bg-emerald-500/10 blur-3xl -mr-20 -mt-20 rounded-full" />
               </div>

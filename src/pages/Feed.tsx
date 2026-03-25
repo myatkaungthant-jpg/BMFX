@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Image as ImageIcon, Send, Loader2, Pencil, Trash2
 import { motion, AnimatePresence } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 import { PostImageGrid } from '../components/PostImageGrid';
+import { Link } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -410,7 +411,7 @@ export function Feed() {
         ) : (
           <div className="bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 mb-8 text-center">
             <p className="text-zinc-500 text-sm mb-3">Posting is a Student feature. Join the community to share your journey!</p>
-            <button className="px-6 py-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform">Get Student Package</button>
+            <Link to="/pricing" className="inline-block px-6 py-2 bg-[#7AB8E5] dark:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform">Get Student Package</Link>
           </div>
         )}
 
